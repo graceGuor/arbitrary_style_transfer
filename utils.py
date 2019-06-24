@@ -23,7 +23,15 @@ def list_images(directory):
 def get_train_images(paths, resize_len=512, crop_height=256, crop_width=256):
     images = []
     for path in paths:
+        # if path.endswith("101947.jpg"):
+        #     continue
+
         image = imread(path, mode='RGB')
+        if len(image.shape) != 3:
+            print("randomly generate image:", path, flush=True)
+            image = np.random.rand(crop_height, crop_width, 3)
+            images.append(image * 255)
+            continue
         height, width, _ = image.shape
 
         if height < width:

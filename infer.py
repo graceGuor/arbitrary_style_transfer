@@ -35,15 +35,16 @@ def stylize(contents_path, styles_path, output_dir, encoder_path, model_path,
         outputs = []
         for content_path in contents_path:
 
-            content_img = get_images(content_path, 
-                height=resize_height, width=resize_width)
+            content_img = get_images(content_path,
+                                     height=resize_height,
+                                     width=resize_width)
 
             for style_path in styles_path:
 
-                style_img   = get_images(style_path)
+                style_img = get_images(style_path)
 
-                result = sess.run(output_image, 
-                    feed_dict={content: content_img, style: style_img})
+                result = sess.run(output_image,
+                                  feed_dict={content: content_img, style: style_img})
 
                 outputs.append(result[0])
 

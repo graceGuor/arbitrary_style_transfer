@@ -11,11 +11,11 @@ from utils import get_train_images
 
 STYLE_LAYERS  = ('relu1_1', 'relu2_1', 'relu3_1', 'relu4_1')
 
-TRAINING_IMAGE_SHAPE = (256, 256, 3) # (height, width, color_channels)
+TRAINING_IMAGE_SHAPE = (256, 256, 3)  # (height, width, color_channels)
 
 EPOCHS = 4
 EPSILON = 1e-5
-BATCH_SIZE = 8
+BATCH_SIZE = 8 # 1  #
 LEARNING_RATE = 1e-4
 LR_DECAY_RATE = 5e-5
 DECAY_STEPS = 1.0
@@ -29,6 +29,7 @@ def train(style_weight, content_imgs_path, style_imgs_path, encoder_path,
 
     # guarantee the size of content and style images to be a multiple of BATCH_SIZE
     num_imgs = min(len(content_imgs_path), len(style_imgs_path))
+    print("train", num_imgs, "pairs.")
     content_imgs_path = content_imgs_path[:num_imgs]
     style_imgs_path   = style_imgs_path[:num_imgs]
     mod = num_imgs % BATCH_SIZE
@@ -105,43 +106,83 @@ def train(style_weight, content_imgs_path, style_imgs_path, encoder_path,
             print('\nElapsed time for preprocessing before actually train the model: %s' % elapsed_time)
             print('Now begin to train the model...\n')
 
-        try:
-            for epoch in range(EPOCHS):
+        for epoch in range(EPOCHS):
 
-                np.random.shuffle(content_imgs_path)
-                np.random.shuffle(style_imgs_path)
+            np.random.shuffle(content_imgs_path)
+            np.random.shuffle(style_imgs_path)
 
-                for batch in range(n_batches):
-                    # retrive a batch of content and style images
-                    content_batch_path = content_imgs_path[batch*BATCH_SIZE:(batch*BATCH_SIZE + BATCH_SIZE)]
-                    style_batch_path   = style_imgs_path[batch*BATCH_SIZE:(batch*BATCH_SIZE + BATCH_SIZE)]
+            for batch in range(n_batches):
+                # retrive a batch of content and style images
+                content_batch_path = content_imgs_path[batch * BATCH_SIZE:(batch * BATCH_SIZE + BATCH_SIZE)]
+                style_batch_path = style_imgs_path[batch * BATCH_SIZE:(batch * BATCH_SIZE + BATCH_SIZE)]
 
-                    content_batch = get_train_images(content_batch_path, crop_height=HEIGHT, crop_width=WIDTH)
-                    style_batch   = get_train_images(style_batch_path,   crop_height=HEIGHT, crop_width=WIDTH)
+                content_batch = get_train_images(content_batch_path, crop_height=HEIGHT, crop_width=WIDTH)
+                style_batch = get_train_images(style_batch_path, crop_height=HEIGHT, crop_width=WIDTH)
 
-                    # run the training step
-                    sess.run(train_op, feed_dict={content: content_batch, style: style_batch})
+                # run the training step
+                sess.run(train_op, feed_dict={content: content_batch, style: style_batch})
 
-                    step += 1
+                step += 1
 
-                    if step % 1000 == 0:
-                        saver.save(sess, model_save_path, global_step=step, write_meta_graph=False)
+                if step % 1000 == 0:
+                    saver.save(sess, model_save_path, global_step=step, write_meta_graph=False)
 
-                    if debug:
-                        is_last_step = (epoch == EPOCHS - 1) and (batch == n_batches - 1)
+                if debug:
+                    is_last_step = (epoch == EPOCHS - 1) and (batch == n_batches - 1)
 
-                        if is_last_step or step == 1 or step % logging_period == 0:
-                            elapsed_time = datetime.now() - start_time
-                            _content_loss, _style_loss, _loss = sess.run([content_loss, style_loss, loss], 
-                                feed_dict={content: content_batch, style: style_batch})
+                    if is_last_step or step == 1 or step % logging_period == 0:
+                        elapsed_time = datetime.now() - start_time
+                        _content_loss, _style_loss, _loss = sess.run([content_loss, style_loss, loss],
+                                                                     feed_dict={content: content_batch,
+                                                                                style: style_batch})
 
-                            print('step: %d,  total loss: %.3f,  elapsed time: %s' % (step, _loss, elapsed_time))
-                            print('content loss: %.3f' % (_content_loss))
-                            print('style loss  : %.3f,  weighted style loss: %.3f\n' % (_style_loss, style_weight * _style_loss))
-        except Exception as ex:
-            saver.save(sess, model_save_path, global_step=step)
-            print('\nSomething wrong happens! Current model is saved to <%s>' % tmp_save_path)
-            print('Error message: %s' % str(ex))
+                        print('step: %d,  total loss: %.3f,  elapsed time: %s' % (step, _loss, elapsed_time))
+                        print('content loss: %.3f' % (_content_loss))
+                        print('style loss  : %.3f,  weighted style loss: %.3f\n'
+                              % (_style_loss, style_weight * _style_loss), flush=True)
+
+        # try:
+        #     for epoch in range(EPOCHS):
+        #
+        #         np.random.shuffle(content_imgs_path)
+        #         np.random.shuffle(style_imgs_path)
+        #
+        #         for batch in range(n_batches):
+        #             # retrive a batch of content and style images
+        #             content_batch_path = content_imgs_path[batch*BATCH_SIZE:(batch*BATCH_SIZE + BATCH_SIZE)]
+        #             style_batch_path   = style_imgs_path[batch*BATCH_SIZE:(batch*BATCH_SIZE + BATCH_SIZE)]
+        #
+        #             style_batch = get_train_images(style_batch_path, crop_height=HEIGHT, crop_width=WIDTH)
+        #             content_batch = get_train_images(content_batch_path, crop_height=HEIGHT, crop_width=WIDTH)
+        #
+        #             # run the training step
+        #             sess.run(train_op, feed_dict={content: content_batch, style: style_batch})
+        #
+        #             step += 1
+        #
+        #             if step % 1000 == 0:
+        #                 saver.save(sess, model_save_path, global_step=step, write_meta_graph=False)
+        #
+        #             if debug:
+        #                 is_last_step = (epoch == EPOCHS - 1) and (batch == n_batches - 1)
+        #
+        #                 if is_last_step or step == 1 or step % logging_period == 0:
+        #                     elapsed_time = datetime.now() - start_time
+        #                     _content_loss, _style_loss, _loss = sess.run([content_loss, style_loss, loss],
+        #                         feed_dict={content: content_batch, style: style_batch})
+        #
+        #                     print('step: %d,  total loss: %.3f,  elapsed time: %s' % (step, _loss, elapsed_time))
+        #                     print('content loss: %.3f' % (_content_loss))
+        #                     print('style loss  : %.3f,  weighted style loss: %.3f\n'
+        #                           % (_style_loss, style_weight * _style_loss), flush=True)
+        # except Exception as ex:
+        #     saver.save(sess, model_save_path, global_step=step)
+        #     # tmp_save_path = "tmp"
+        #     # print('\nSomething wrong happens! Current model is saved to <%s>' % tmp_save_path)
+        #     print('\nSomething wrong happens! ')
+        #     print('Error message: %s' % str(ex))
+
+
 
         ###### Done Training & Save the model ######
         saver.save(sess, model_save_path)
